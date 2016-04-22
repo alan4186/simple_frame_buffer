@@ -48,6 +48,9 @@ parameter V_ACT = 1024;
 parameter V_BLANK = V_FRONT + V_SYNC + V_BACK;
 parameter V_TOTAL = V_FRONT + V_SYNC + V_BACK + V_ACT;
 
+// parameters to force a square image
+parameter SH_ACT = V_ACT; // make the horizontal resolution the same as the vertical resolution
+parameter S_FILLER = SH_ACT/2;
 
 //vga pin  assigns
 assign VGA_SYNC = VGA_HS || VGA_VS,
@@ -78,10 +81,10 @@ begin
 		end
 	else
 		if(we_nIN==1'b1)
-			if (pixelcount>32'd1688)
+			if (pixelcount>H_TOTAL)
 				begin
 					pixelcount<=32'd0;
-					if (linecount>32'd1066)
+					if (linecount>V_TOTAL)
 						linecount<=32'd0;
 					else
 						linecount<= linecount+1;
@@ -119,7 +122,7 @@ begin
 		VGA_HS<=1'b1;
 	
 	//Back porch and Front porch
-	if ((pixelcount>=H_SYNC && pixelcount<32'd360)|| (pixelcount>=32'd1640))
+	if ((pixelcount>=H_SYNC && pixelcount<(H_SYNC+H_BACK))|| (pixelcount>=(H_SYNC+H_BACK+H_ACT)))
 		h_blank<=1'b0;
 	else
 		h_blank<=1'b1;
@@ -127,7 +130,7 @@ begin
 	// horizontal visible area 
 	//if (pixelcount>=32'd360 && pixelcount<32'd1640)
 	//change to make a square 1024x1024													//<=
-	if (linecount>=32'd41&&linecount<32'd1065&&pixelcount>=32'd488 && pixelcount<32'd1512&&we_nIN==1'b1)
+	if (linecount>=(V_BACK+V_SYNC)&&linecount<(V_BACK+V_SYNC+V_ACT)&&pixelcount>=(H_BACK+H_SYNC+S_FILLER) && pixelcount<(H_BACK+H_SYNC+H_ACT-S_FILLER)&&we_nIN==1'b1)
 		begin
 		//read linebuffer
 			//VGA_R<=8'h00;
@@ -164,13 +167,13 @@ begin
 	begin
 	
 	//vsync
-	if (linecount<32'd3)
+	if (linecount<V_SYNC)
 		VGA_VS<=1'b0;
 	else
 		VGA_VS <= 1'b1;
 	
 	// Back porch or front porch
-	if ((linecount >=V_SYNC && linecount<32'd41)|| linecount>=32'd1065)
+	if ((linecount >=V_SYNC && linecount<(V_BACK+V_SYNC))|| linecount>=(V_BACK+V_SYNC+V_ACT))
 		v_blank<=1'b1;
 	else
 		v_blank <= 1'b0;
@@ -194,8 +197,8 @@ begin
 
 		end
 	else
-		// fill line buffer in the first 1024 pixels of row (only on visible rows)
-		if(linecount>=32'd41&&linecount<32'd1065&&pixelcount<32'd1024&&we_nIN==1'b1)
+		// fill line buffer in the first 1024 pixels of row (only on visible rows)  \/ is this right?
+		if(linecount>=(V_SYNC+V_BACK)&&linecount<(V_SYNC+V_BACK+V_ACT)&&pixelcount<SH_ACT&&we_nIN==1'b1)
 			begin
 				Rdata<=sram_dq[15:8];
 				Bdata<=sram_dq[7:0];
