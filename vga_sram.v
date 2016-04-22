@@ -31,6 +31,24 @@ wire clk108,we_nIN;
 wire VGA_BLANK, VGA_SYNC;
 wire [7:0] Rq,Bq, gray;
 
+// VGA parameters
+// horizontal
+parameter H_FRONT = 48;
+parameter H_SYNC = 112;
+parameter H_BACK = 248;
+parameter H_ACT = 1280;
+parameter H_BLANK = H_FRONT + H_SYNC + H_BACK;
+parameter H_TOTAL = H_FRONT + H_SYNC + H_BACK + H_ACT;
+
+// vertical
+parameter V_FRONT = 1;
+parameter V_SYNC = 3;
+parameter V_BACK = 38;
+parameter V_ACT = 1024;
+parameter V_BLANK = V_FRONT + V_SYNC + V_BACK;
+parameter V_TOTAL = V_FRONT + V_SYNC + V_BACK + V_ACT;
+
+
 //vga pin  assigns
 assign VGA_SYNC = VGA_HS || VGA_VS,
 		 VGA_BLANK = h_blank || v_blank;
@@ -95,13 +113,13 @@ begin
 	
 	
 	//HSYNC
-	if (pixelcount<32'd112)
+	if (pixelcount< H_SYNC)
 		VGA_HS<=1'b0;
 	else
 		VGA_HS<=1'b1;
 	
 	//Back porch and Front porch
-	if ((pixelcount>=32'd112 && pixelcount<32'd360)|| (pixelcount>=32'd1640))
+	if ((pixelcount>=H_SYNC && pixelcount<32'd360)|| (pixelcount>=32'd1640))
 		h_blank<=1'b0;
 	else
 		h_blank<=1'b1;
@@ -152,7 +170,7 @@ begin
 		VGA_VS <= 1'b1;
 	
 	// Back porch or front porch
-	if ((linecount >=32'd3 && linecount<32'd41)|| linecount>=32'd1065)
+	if ((linecount >=V_SYNC && linecount<32'd41)|| linecount>=32'd1065)
 		v_blank<=1'b1;
 	else
 		v_blank <= 1'b0;
