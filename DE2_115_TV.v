@@ -72,7 +72,7 @@ module DE2_115_TV
 //===========================================================================
 // PARAMETER declarations
 //===========================================================================
-
+parameter LINEWIDTH = 640;
 
 //===========================================================================
 // PORT declarations
@@ -133,11 +133,29 @@ wire            PAL;
 // Structural coding
 //=============================================================================
  //////// Alan's Stuff ///////
-assign	LEDG	=	{1'b1, YCbCr[15:8]};
+assign LEDG	=	{1'b1, YCbCr[15:8]};
+assign 
 
 //	Turn On TV Decoder
 assign	TD_RESET_N	=	1'b1;
-							
+assign addr_a = TV_X + ( TV_Y * LINEWIDTH); 
+assign wren_a = TV_DVAL;
+
+assign data_b = 8'hff;
+
+//  Frame buffer 
+frame_buffer fb(
+    .address_a(addr_a),
+    .address_b(addr_b),
+    .data_a(YCbCr[15:8]),
+    .data_b(data_b),
+    .inclock(),
+    .outclock(),
+    .wren_a(),
+    .wren_b(),
+    .q_a(),
+    .q_b() 
+    );
 //	TV Decoder Stable Check
 TD_Detect			u2	(	.oTD_Stable(TD_Stable),
 							.oNTSC(NTSC),
@@ -158,6 +176,7 @@ ITU_656_Decoder		u4	(	//	TV Decoder Input
 							.iTD_DATA(TD_DATA),
 							//	Position Output
 							.oTV_X(TV_X),
+              .oTV_Y(TV_Y),
 							//	YUV 4:2:2 Output
 							.oYCbCr(YCbCr),
 							.oDVAL(TV_DVAL),
