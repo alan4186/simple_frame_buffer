@@ -1,3 +1,11 @@
 **/*.swp
 **/.DS_Store
 **/*.qpf
+**/*.bak
+**/*.qip
+**/*.cdf
+**/*.stp
+**/*.qws
+**/*.rpt
+**/*.stp
+
