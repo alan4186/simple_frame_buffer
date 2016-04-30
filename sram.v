@@ -41,7 +41,7 @@ begin
 				begin
 					oe_n<=1'b0;//dont care
 					sram_addr<=count;//set address on sram
-					sram_dq_reg<={count[9:2],/*8'd0*/count_flip};//write to selected sram
+					sram_dq_reg<={16'hffff/*count[9:2],8'd0/*count_flip*/};//write to selected sram
 					if(count==20'hfffff)
 						we_n<=1'b1;// when every address has been writen to, start reading
 				end

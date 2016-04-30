@@ -1,20 +1,42 @@
-module simple_frame_buffer (clk, rst,VGA_R, VGA_G, VGA_B,VGA_HS, VGA_VS,VGA_CLK,VGA_SYNC, VGA_BLANK,sram_addrF,sram_dqF, ce_n,oe_n,we_n,ub_n,lb_n,ledwe);
-input clk, rst;
-
+module simple_frame_buffer (
+			CLOCK_50, 
+			KEY,// for reset
+			VGA_R, 
+			VGA_G, 
+			VGA_B,
+			VGA_HS, 
+			VGA_VS,
+			VGA_CLK,
+			VGA_SYNC_N, 
+			VGA_BLANK_N,
+			SRAM_ADDR,
+			SRAM_DQ, 
+			SRAM_CE_N,
+			SRAM_OE_N,
+			SRAM_WE_N,
+			SRAM_UB_N,
+			SRAM_LB_N,
+			LEDG
+		);
+input CLOCK_50;
+input [3:0] KEY;
 
 //input/output sram data bus
-inout [15:0] sram_dqF;
+inout [15:0] SRAM_DQ;
 
 
 // sram output pins
-output ce_n,oe_n,we_n,ub_n,lb_n,ledwe;
+output SRAM_CE_N,SRAM_OE_N,SRAM_WE_N,SRAM_UB_N,SRAM_LB_N;
 //vga output pins
-output VGA_BLANK, VGA_SYNC, VGA_CLK, VGA_HS, VGA_VS;
+output VGA_BLANK_N, VGA_SYNC_N, VGA_CLK, VGA_HS, VGA_VS;
 //vga color data
 output [7:0] VGA_R, VGA_G, VGA_B;
+// green led output to display we signal
+output [8:0] LEDG;
 //sram address signal
-output [19:0] sram_addrF;
+output [19:0] SRAM_ADDR;
 
+wire rst;
 
 //sram wires/regs
 wire [15:0] sram_dqW;
@@ -26,23 +48,28 @@ reg [15:0]sram_dq_reg;
 
 //108MHz plls
 wire clk108;
-pll108 clkmain(clk, clk108);
-pll108 vga(clk, VGA_CLK);
+//pll108 clkmain(CLOCK_50, clk108);
+//pll108 vga(CLOCK_50, VGA_CLK);
+// 25.175Mhz PLL
+pll25_175 clkmain(CLOCK_50, clk108);// clk108 is actually 25.175mhz
+pll25_175 vga(CLOCK_50, VGA_CLK);
+
+assign rst = KEY[0];
 
 // if writing to sram use the sram()module address, else use the vga_sram() moudule address
-assign sram_addrF= we_n ? sram_addrR:sram_addrW;
-// if reading sram set sram_dqF to high impedance mode
-assign sram_dqF= we_n ? 16'hzzzz:sram_dqW;
+assign SRAM_ADDR= SRAM_WE_N ? sram_addrR:sram_addrW;
+// if reading sram set SRAM_DQ to high impedance mode
+assign SRAM_DQ = SRAM_WE_N ? 16'hzzzz:sram_dqW;
 
 
 
 //writes a black to red scale to sram 1024bits long
-sram sram_scale(clk108, rst,sram_addrW,sram_dqW, ce_n,oe_n,we_n,ub_n,lb_n);
+sram sram_scale(clk108, rst,sram_addrW,sram_dqW, SRAM_CE_N,SRAM_OE_N,SRAM_WE_N,SRAM_UB_N,SRAM_LB_N);
 
 
-assign ledwe=we_n ;
+assign LEDG[8]=SRAM_WE_N ;
 //julia calculator with shifts
-//iteratio_tester tester0(clk108, rst,done,sram_addrW,sram_dqW,ce_n,oe_n,we_n,ub_n,lb_n,startFlag,rC,iC);
+//iteratio_tester tester0(clk108, rst,done,sram_addrW,sram_dqW,SRAM_CE_N,SRAM_OE_N,SRAM_WE_N,SRAM_UB_N,SRAM_LB_N,startFlag,rC,iC);
 								//clk108
 
 
@@ -50,7 +77,7 @@ assign ledwe=we_n ;
 //reads sram and displays on vga monitor
 // uses 1280x1024 but sram can only hold data for 2 colors (16bits) at 1024x1024 
 //displays a black to red scale on monitor
-vga_sram vga0(clk108,rst,VGA_R, VGA_G, VGA_B,VGA_HS, VGA_VS,VGA_SYNC, VGA_BLANK,sram_addrR,sram_dqF,we_n);
+vga_sram vga0(clk108,rst,VGA_R, VGA_G, VGA_B,VGA_HS, VGA_VS,VGA_SYNC_N, VGA_BLANK_N,sram_addrR,16'hff/*SRAM_DQ*/,SRAM_WE_N);
 
 
 
