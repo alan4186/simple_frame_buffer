@@ -13,7 +13,7 @@ input [7:0] fb_data;
 
 output VGA_BLANK, VGA_SYNC, VGA_HS, VGA_VS;
 output [7:0] VGA_R, VGA_G, VGA_B;
-output [19:0] FB_ADDR;
+output [18:0] FB_ADDR;
 
 
 reg [7:0] VGA_R, VGA_G, VGA_B;
@@ -23,7 +23,7 @@ reg red_value;
 
 reg [9:0] rdaddress;
 reg [9:0] wraddress;
-reg [19:0] FB_ADDR;
+reg [18:0] FB_ADDR;
 reg [7:0] Rdata, Bdata;
 reg UBwe, LBwe;
 
@@ -67,6 +67,7 @@ parameter V_TOTAL = V_FRONT + V_SYNC + V_BACK + V_ACT;
 //parameter V_TOTAL = V_FRONT + V_SYNC + V_BACK + V_ACT;
 
 parameter FB_SIZE = V_ACT * H_ACT;
+`define fb_addr_size 19
 
 // parameters to force a square image
 parameter SH_ACT = 0;//V_ACT; // make the horizontal resolution the same as the vertical resolution
@@ -213,7 +214,7 @@ begin
 	if(rst==1'b0)
 		begin
 			wraddress<=10'd0;
-			FB_ADDR<=20'd0;
+			FB_ADDR<=`fb_addr_size'd0;
 		end
 	else
 		// fill line buffer in the first 1024 pixels of row (only on visible rows)  \/ is this right?
@@ -226,9 +227,9 @@ begin
 				wraddress<=wraddress+10'd1;
 				//incriment sram address
 				if(FB_ADDR > FB_SIZE) begin
-				  FB_ADDR <= 20'd0;// FB_ADDR might be less than 20 bits
+				  FB_ADDR <= `fb_addr_size'd0;// FB_ADDR might be less than 20 bits
 				end else begin 
-  				  FB_ADDR<=FB_ADDR+20'd1;
+  				  FB_ADDR<=FB_ADDR+`fb_addr_size'd1;
 				end 
 				//enable writing to on chip rams
 				UBwe<=1'b1;

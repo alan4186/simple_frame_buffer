@@ -66,7 +66,17 @@ module DE2_115_TV
 		TD_HS,
 		TD_RESET_N,
 		TD_VS,
-
+		
+		///////// VGA CTRL and OUTPUT /////////
+		VGA_R,
+		VGA_G,		
+		VGA_B,
+		VGA_BLANK_N,
+		VGA_CLK,
+		VGA_HS,
+		VGA_SYNC_N,
+		VGA_VS
+		
 	);
 
 //===========================================================================
@@ -99,6 +109,9 @@ input		          		TD_HS;
 output		          		TD_RESET_N;
 input		          		TD_VS;
 
+//////////// VGA CTRL / OUTPUT //////////
+output [7:0] VGA_R, VGA_G, VGA_B;
+output VGA_BLANK_N, VGA_HS, VGA_VS, VGA_SYNC_N, VGA_CLK;
 
 ///////////////////////////////////////////////////////////////////
 //=============================================================================
@@ -112,7 +125,7 @@ wire	CLK_25;
 
 //	For ITU-R 656 Decoder
 wire	[15:0]	YCbCr;
-wire	[9:0]	TV_X;
+wire	[9:0]	TV_X, TV_Y;
 wire			TV_DVAL;
 
 //	For Delay Timer
@@ -129,33 +142,64 @@ wire			mDVAL;
 
 wire            NTSC;
 wire            PAL;
+
+// for Frame Buffer and VGA
+wire [7:0] q_a, q_b;
+wire [18:0] addr_b;
+reg[18:0] addr_a;
 //=============================================================================
 // Structural coding
 //=============================================================================
  //////// Alan's Stuff ///////
-assign LEDG	=	{1'b1, YCbCr[15:8]};
-assign 
+//assign LEDG	=	{1'b1, YCbCr[15:8]};
 
-//	Turn On TV Decoder
-assign	TD_RESET_N	=	1'b1;
-assign addr_a = TV_X + ( TV_Y * LINEWIDTH); 
-assign wren_a = TV_DVAL;
+// PLL for VGA
+pll25_175 vga(CLOCK_50, VGA_CLK);
 
-assign data_b = 8'hff;
 
 //  Frame buffer 
 frame_buffer fb(
     .address_a(addr_a),
     .address_b(addr_b),
     .data_a(YCbCr[15:8]),
-    .data_b(data_b),
-    .inclock(),
-    .outclock(),
-    .wren_a(),
-    .wren_b(),
-    .q_a(),
-    .q_b() 
+    .data_b(8'hff),
+    .inclock(CLOCK_50),
+    .outclock(VGA_CLK),
+    .wren_a(TV_DVAL),
+    .wren_b(1'd0),// b is the vga port, will never read
+    .q_a(LEDG[7:0]),
+    .q_b(q_b) 
     );
+	 
+// VGA Controll and output
+vga_sram vga_fb(.CLOCK_PX(VGA_CLK),// this was a seperate pll previously
+						.rst(KEY[0]),
+						.VGA_R(VGA_R),
+						.VGA_G(VGA_G),
+						.VGA_B(VGA_B),
+						.VGA_HS(VGA_HS),
+						.VGA_VS(VGA_VS),
+						.VGA_SYNC(VGA_SYNC_N),
+						.VGA_BLANK(VGA_BLANK_N),
+						.FB_ADDR(addr_b),
+						.fb_data(q_b),
+						.we_nIN(1'd1)// always display
+					);
+					
+//	Turn On TV Decoder
+assign	TD_RESET_N	=	1'b1;
+//assign addr_a = (TV_X + ( TV_Y * LINEWIDTH)) - 2; 
+parameter FB_SIZE = 640*480;
+always@(posedge TV_DVAL) begin
+  if(TD_VS == 1'b0 || addr_a > )
+    addr_a <= 18'd0;
+  else
+    addr_a <= addr_a + 18'd1;
+end
+//assign wren_a = TV_DVAL;
+
+//assign data_b = 8'hff;
+					
 //	TV Decoder Stable Check
 TD_Detect			u2	(	.oTD_Stable(TD_Stable),
 							.oNTSC(NTSC),
@@ -176,7 +220,7 @@ ITU_656_Decoder		u4	(	//	TV Decoder Input
 							.iTD_DATA(TD_DATA),
 							//	Position Output
 							.oTV_X(TV_X),
-              .oTV_Y(TV_Y),
+                     .oTV_Y(TV_Y),
 							//	YUV 4:2:2 Output
 							.oYCbCr(YCbCr),
 							.oDVAL(TV_DVAL),
