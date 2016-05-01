@@ -31,24 +31,38 @@ wire CLOCK_PX,we_nIN;
 wire VGA_BLANK, VGA_SYNC;
 wire [7:0] Rq,Bq, gray;
 
-// VGA parameters 1280 x 1024
+// VGA parameters 640 x 480
 // horizontal
-parameter H_FRONT = 16;
-parameter H_SYNC = 96;
-parameter H_BACK = 48;
-parameter H_ACT = 640;
-parameter H_BLANK = H_FRONT + H_SYNC + H_BACK;
-parameter H_TOTAL = H_FRONT + H_SYNC + H_BACK + H_ACT;
+//parameter H_FRONT = 16;
+//parameter H_SYNC = 96;
+//parameter H_BACK = 48;
+//parameter H_ACT = 640;
+//parameter H_BLANK = H_FRONT + H_SYNC + H_BACK;
+//parameter H_TOTAL = H_FRONT + H_SYNC + H_BACK + H_ACT;
+//
+//// vertical
+//parameter V_FRONT = 10;
+//parameter V_SYNC = 2;
+//parameter V_BACK = 33;
+//parameter V_ACT = 480;
+//parameter V_BLANK = V_FRONT + V_SYNC + V_BACK;
+//parameter V_TOTAL = V_FRONT + V_SYNC + V_BACK + V_ACT;
 
-// vertical
-parameter V_FRONT = 10;
-parameter V_SYNC = 2;
-parameter V_BACK = 33;
-parameter V_ACT = 480;
-parameter V_BLANK = V_FRONT + V_SYNC + V_BACK;
-parameter V_TOTAL = V_FRONT + V_SYNC + V_BACK + V_ACT;
-
-
+//	Horizontal	Parameter
+parameter	H_FRONT	=	16;
+parameter	H_SYNC	=	96;
+parameter	H_BACK	=	48;
+parameter	H_ACT	=	640;
+parameter	H_BLANK	=	H_FRONT+H_SYNC+H_BACK;
+parameter	H_TOTAL	=	H_FRONT+H_SYNC+H_BACK+H_ACT;
+////////////////////////////////////////////////////////////
+//	Vertical Parameter
+parameter	V_FRONT	=	11;
+parameter	V_SYNC	=	2;
+parameter	V_BACK	=	31;
+parameter	V_ACT	=	480;
+parameter	V_BLANK	=	V_FRONT+V_SYNC+V_BACK;
+parameter	V_TOTAL	=	V_FRONT+V_SYNC+V_BACK+V_ACT;
 // VGA parameters 1280 x 1024
 // horizontal
 //parameter H_FRONT = 48;
@@ -74,7 +88,7 @@ parameter SH_ACT = 0;//V_ACT; // make the horizontal resolution the same as the 
 parameter S_FILLER = 0;//SH_ACT/2;
 
 //vga pin  assigns
-assign VGA_SYNC = VGA_HS || VGA_VS,
+assign VGA_SYNC = 1'b1,//VGA_HS || VGA_VS,
 		 VGA_BLANK = h_blank || v_blank;
 		 
 
@@ -144,7 +158,8 @@ begin
 		VGA_HS<=1'b1;
 	
 	//Back porch and Front porch
-	if ((pixelcount>=H_SYNC && pixelcount<(H_SYNC+H_BACK))|| (pixelcount>=(H_SYNC+H_BACK+H_ACT)))
+//	if ((pixelcount>=H_SYNC && pixelcount<(H_SYNC+H_BACK))|| (pixelcount>=(H_SYNC+H_BACK+H_ACT)))
+   if (pixelcount < H_BLANK)
 		h_blank<=1'b0;
 	else
 		h_blank<=1'b1;
@@ -200,7 +215,8 @@ begin
 		VGA_VS <= 1'b1;
 	
 	// Back porch or front porch
-	if ((linecount >=V_SYNC && linecount<(V_BACK+V_SYNC))|| linecount>=(V_BACK+V_SYNC+V_ACT))
+	//if ((linecount >=V_SYNC && linecount<(V_BACK+V_SYNC))|| linecount>=(V_BACK+V_SYNC+V_ACT))
+	if (linecount < V_BLANK )
 		v_blank<=1'b1;
 	else
 		v_blank <= 1'b0;

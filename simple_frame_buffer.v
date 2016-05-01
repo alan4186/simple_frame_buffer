@@ -77,8 +77,17 @@ assign LEDG[8]=SRAM_WE_N ;
 //reads sram and displays on vga monitor
 // uses 1280x1024 but sram can only hold data for 2 colors (16bits) at 1024x1024 
 //displays a black to red scale on monitor
-vga_sram vga0(clk108,rst,VGA_R, VGA_G, VGA_B,VGA_HS, VGA_VS,VGA_SYNC_N, VGA_BLANK_N,sram_addrR,16'hff/*SRAM_DQ*/,SRAM_WE_N);
+vga_sram vga0(clk108,rst,VGA_R, VGA_G, VGA_B,VGA_HS, VGA_VS,VGA_SYNC_N, VGA_BLANK_N,sram_addrR,data/*SRAM_DQ*/,SRAM_WE_N);
 
+reg[9:0] data;
+always@(posedge clk108 or negedge rst) begin
+  if(rst ==1'b0) 
+    data <= 10'd0;
+  else if(data<10'd800)
+    data <= data+10'd1;
+  else
+    data <= 10'd0;
+end
 
 
 

@@ -47,7 +47,7 @@ module DE2_115_TV
 		CLOCK_50,
 //		CLOCK2_50,
 //		CLOCK3_50,
-//		ENETCLK_25,
+		ENETCLK_25,
 
 		//////// LED //////////
 		LEDG,
@@ -90,7 +90,7 @@ parameter LINEWIDTH = 640;
  
 //////////// CLOCK //////////
 input		          		CLOCK_50;
-
+input  ENETCLK_25;
 //////////// LED //////////
 output		     [8:0]		LEDG;
 //output		    [17:0]		LEDR;
@@ -151,6 +151,12 @@ wire [18:0] addr_b;
 
 reg[18:0] addr_a;
 
+// for image processing
+wire[7:0] im_processed;
+
+// for ui
+wire [9:0] obj_x, obj_y;
+//reg [9:0] obj_x, obj_y;
 //=============================================================================
 // Structural coding
 //=============================================================================
@@ -158,37 +164,101 @@ reg[18:0] addr_a;
 //assign LEDG	=	{1'b1, YCbCr[15:8]};
 
 // PLL for VGA
-pll25_175 vga(CLOCK_50, VGA_CLK);
-pll25_175 main(CLOCK_50, CLOCK_PX);
+//pll25_175 vga(CLOCK_50, VGA_CLK);
+//pll25_175 main(CLOCK_50, CLOCK_PX);
+test vga(CLOCK_50, VGA_CLK);
+test main(CLOCK_50, CLOCK_PX);
+
+
+
+VGA_Ctrl	(	//	Host Side
+						.iRed(q_b),
+						.iGreen(q_b),
+						.iBlue(q_b),
+//						oCurrent_X(),
+//						oCurrent_Y,
+						.oAddress(addr_b),
+//						oRequest,
+						//	VGA Side
+						.oVGA_R(VGA_R),
+						.oVGA_G(VGA_G),
+						.oVGA_B(VGA_B),
+						.oVGA_HS(VGA_HS),
+						.oVGA_VS(VGA_VS),
+						.oVGA_SYNC(VGA_SYNC_N),
+						.oVGA_BLANK(VGA_BLANK_N),
+//						oVGA_CLOCK(VGA_CL),
+						//	Control Signal
+						.iCLK(VGA_CLK),
+						.iRST_N(1'b1/*KEY[0]*/)	);
+
+// User input
+user_input ui(
+  .CLOCK(CLOCK_50),
+  .RESET(1'b1),
+  .KEY(KEY),
+  .OBJ_X(obj_x),
+  .OBJ_Y(obj_y)
+ );
+
+// Image Processing
+image_processing im(
+  .CLOCK_50(TD_CLK27/*CLOCK_50*/),
+  .RESET(1'b1/*KEY[0]*/),
+  
+  .IM_DATA(YCbCr[15:8]), 
+  .OBJ_X(obj_x),
+  .OBJ_Y(obj_y),
+  .FB_ADDR(addr_a),
+  
+  .FB_DATA(im_processed),
+  
+  );
+
+// reg [28:0] count;
+//always@(posedge TD_CLK27) begin
+//  count <= count + 29'd1;
+//  if(count == 29'd0)
+//  if (obj_x > 10'd150) 
+//    obj_x <= 10'd50;
+//  else
+//    obj_x <= obj_x + 10'd1;
+//  if (obj_y > 10'd150) 
+//    obj_y <= 10'd50;
+//  else
+//    obj_y <= obj_y + 10'd1;
+//end
+// 
+
 
 //  Frame buffer 
 frame_buffer fb(
-    .address_a(addr_a),
+    .address_a(/*addr_a*/TV_X + (TV_Y *640)),
     .address_b(addr_b),
-    .data_a(/*c[9:2]*/YCbCr[15:8]),
+    .data_a(/*c[9:2]*//*YCbCr[15:8]*/im_processed),
     .data_b(8'hff),
     .inclock(TD_CLK27),
-    .outclock(CLOCK_PX),
-    .wren_a(/*fb_fill_en*/TV_DVAL),
+    .outclock(CLOCK_PX/*ENETCLK_25*/),
+    .wren_a(TV_DVAL),
     .wren_b(1'd0),// b is the vga port, will never write
     .q_a(LEDG[7:0]),
     .q_b(q_b) 
     );
 	 
-// VGA Controll and output
-vga_sram vga_fb(.CLOCK_PX(CLOCK_PX),// this was a seperate pll previously
-						.rst(KEY[0]),
-						.VGA_R(VGA_R),
-						.VGA_G(VGA_G),
-						.VGA_B(VGA_B),
-						.VGA_HS(VGA_HS),
-						.VGA_VS(VGA_VS),
-						.VGA_SYNC(VGA_SYNC_N),
-						.VGA_BLANK(VGA_BLANK_N),
-						.FB_ADDR(addr_b),
-						.fb_data(q_b),
-						.we_nIN(1'd1)// always display
-					);
+//// VGA Controll and output
+//vga_sram vga_fb(.CLOCK_PX(CLOCK_PX/*ENETCLK_25*/),// this was a seperate pll previously
+//						.rst(KEY[0]),
+//						.VGA_R(VGA_R),
+//						.VGA_G(VGA_G),
+//						.VGA_B(VGA_B),
+//						.VGA_HS(VGA_HS),
+//						.VGA_VS(VGA_VS),
+//						.VGA_SYNC(VGA_SYNC_N),
+//						.VGA_BLANK(VGA_BLANK_N),
+//						.FB_ADDR(addr_b),
+//						.fb_data(q_b),
+//						.we_nIN(1'd1)// always display
+//					);
 			
 //    reg fb_fill_en;
 //    reg [9:0] c;
@@ -211,8 +281,12 @@ vga_sram vga_fb(.CLOCK_PX(CLOCK_PX),// this was a seperate pll previously
 assign	TD_RESET_N	=	1'b1;
 
 parameter FB_SIZE = 640*480;
-always@(posedge TV_DVAL) begin
-  if(TD_VS == 1'b0 || addr_a >= FB_SIZE)
+parameter NES_RES = 640*500;
+always@(posedge TV_DVAL /*or negedge KEY[0]*/) begin
+//  if(KEY[0] == 1'b0) 
+//    addr_a <= 19'd0;
+//  else
+  if(TD_VS == 1'b0 || addr_a >= NES_RES)
     addr_a <= 19'd0;
   else
     addr_a <= addr_a + 19'd1;
@@ -228,7 +302,7 @@ TD_Detect			u2	(	.oTD_Stable(TD_Stable),
 							.oPAL(PAL),
 							.iTD_VS(TD_VS),
 							.iTD_HS(TD_HS),
-							.iRST_N(KEY[0])	);
+							.iRST_N(1'b1/*KEY[0]*/)	);
 
 //	Reset Delay Timer
 Reset_Delay			u3	(	.iCLK(CLOCK_50),
@@ -264,7 +338,7 @@ DIV 				u5	(	.aclr(!DLY0),
 //	Audio CODEC and video decoder setting
 I2C_AV_Config 	u1	(	//	Host Side
 						.iCLK(CLOCK_50),
-						.iRST_N(KEY[0]),
+						.iRST_N(1'b1/*KEY[0]*/),
 						//	I2C Side
 						.I2C_SCLK(I2C_SCLK),
 						.I2C_SDAT(I2C_SDAT)	);	
