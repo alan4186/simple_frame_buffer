@@ -150,9 +150,13 @@ begin
 		h_blank<=1'b1;
 	
 	// horizontal visible area 
-	//if (pixelcount>=32'd360 && pixelcount<32'd1640)
+	//if (pixelcount>(H_SYNC+H_BACK) && pixelcount<H_SYNC+H_BACK+H_ACT)
 	//change to make a square 1024x1024													//<=
-	if (linecount>=(V_BACK+V_SYNC)&&linecount<(V_BACK+V_SYNC+V_ACT)&&pixelcount>=(H_BACK+H_SYNC/*+S_FILLER*/) && pixelcount<(H_BACK+H_SYNC+H_ACT/*-S_FILLER*/)&&we_nIN==1'b1)
+	if (linecount>=(V_BACK+V_SYNC) &&
+      linecount<(V_BACK+V_SYNC+V_ACT) &&
+      pixelcount>=(H_BACK+H_SYNC/*+S_FILLER*/) && 
+      pixelcount<(H_BACK+H_SYNC+H_ACT/*-S_FILLER*/) &&
+      we_nIN==1'b1)
 		begin
 		//read linebuffer
 			//VGA_R<=8'h00;
@@ -169,7 +173,8 @@ begin
 		VGA_R<=8'h00;
 		VGA_G<=8'h00;
 		VGA_B<=8'h00;
-		rdaddress<=rdaddress;
+//		rdaddress<=rdaddress;
+    rdaddress <= 10'd0;
 		end
 	end// end else rst
 end//always
@@ -219,14 +224,14 @@ begin
 	else
 		// fill line buffer in the first 1024 pixels of row (only on visible rows)  \/ is this right?
 		// commented out part that makes screen square
-		if(linecount>=(V_SYNC+V_BACK)&&linecount<(V_SYNC+V_BACK+V_ACT)/*&&pixelcount<SH_ACT*/&&we_nIN==1'b1)
+		if(linecount>=(V_SYNC+V_BACK)&&linecount<(V_SYNC+V_BACK+V_ACT)&&pixelcount<H_ACT&&we_nIN==1'b1)
 			begin
 				Rdata<=fb_data;
 				//Bdata<=fb_data;// only need one channel for grayscale
 				//incriment on-chip ram address
 				wraddress<=wraddress+10'd1;
 				//incriment sram address
-				if(FB_ADDR > FB_SIZE) begin
+				if(FB_ADDR >= FB_SIZE) begin
 				  FB_ADDR <= `fb_addr_size'd0;// FB_ADDR might be less than 20 bits
 				end else begin 
   				  FB_ADDR<=FB_ADDR+`fb_addr_size'd1;
@@ -240,6 +245,7 @@ begin
 				//disable writing to on chip rams
 				UBwe<=1'b0;
 				LBwe<=1'b0;	
+        wraddress <= 10'd0;
 			end
 end//always
 

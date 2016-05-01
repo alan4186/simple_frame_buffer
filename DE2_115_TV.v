@@ -144,9 +144,13 @@ wire            NTSC;
 wire            PAL;
 
 // for Frame Buffer and VGA
+wire CLOCK_PX;
+
 wire [7:0] q_a, q_b;
 wire [18:0] addr_b;
+
 reg[18:0] addr_a;
+
 //=============================================================================
 // Structural coding
 //=============================================================================
@@ -155,24 +159,24 @@ reg[18:0] addr_a;
 
 // PLL for VGA
 pll25_175 vga(CLOCK_50, VGA_CLK);
-
+pll25_175 main(CLOCK_50, CLOCK_PX);
 
 //  Frame buffer 
 frame_buffer fb(
     .address_a(addr_a),
     .address_b(addr_b),
-    .data_a(YCbCr[15:8]),
+    .data_a(/*c[9:2]*/YCbCr[15:8]),
     .data_b(8'hff),
-    .inclock(CLOCK_50),
-    .outclock(VGA_CLK),
-    .wren_a(TV_DVAL),
-    .wren_b(1'd0),// b is the vga port, will never read
+    .inclock(TD_CLK27),
+    .outclock(CLOCK_PX),
+    .wren_a(/*fb_fill_en*/TV_DVAL),
+    .wren_b(1'd0),// b is the vga port, will never write
     .q_a(LEDG[7:0]),
     .q_b(q_b) 
     );
 	 
 // VGA Controll and output
-vga_sram vga_fb(.CLOCK_PX(VGA_CLK),// this was a seperate pll previously
+vga_sram vga_fb(.CLOCK_PX(CLOCK_PX),// this was a seperate pll previously
 						.rst(KEY[0]),
 						.VGA_R(VGA_R),
 						.VGA_G(VGA_G),
@@ -185,17 +189,35 @@ vga_sram vga_fb(.CLOCK_PX(VGA_CLK),// this was a seperate pll previously
 						.fb_data(q_b),
 						.we_nIN(1'd1)// always display
 					);
-					
+			
+//    reg fb_fill_en;
+//    reg [9:0] c;
+//  always@(posedge CLOCK_50 or negedge KEY[0]) begin 
+//    if (KEY[0] == 1'b0) begin
+//      addr_a <= 19'd0;
+//      c <= 9'd0;
+//      fb_fill_en <= 1'b1;
+//    end else begin
+//        addr_a <= addr_a + 19'd1;
+//        if(addr_a > 640*480)
+//          fb_fill_en <= 1'b0;
+//        if(c< 640)
+//          c <= c+1;
+//        else
+//          c <= 0;
+//    end
+//  end
 //	Turn On TV Decoder
 assign	TD_RESET_N	=	1'b1;
-//assign addr_a = (TV_X + ( TV_Y * LINEWIDTH)) - 2; 
+
 parameter FB_SIZE = 640*480;
 always@(posedge TV_DVAL) begin
-  if(TD_VS == 1'b0 || addr_a > )
-    addr_a <= 18'd0;
+  if(TD_VS == 1'b0 || addr_a >= FB_SIZE)
+    addr_a <= 19'd0;
   else
-    addr_a <= addr_a + 18'd1;
+    addr_a <= addr_a + 19'd1;
 end
+
 //assign wren_a = TV_DVAL;
 
 //assign data_b = 8'hff;
