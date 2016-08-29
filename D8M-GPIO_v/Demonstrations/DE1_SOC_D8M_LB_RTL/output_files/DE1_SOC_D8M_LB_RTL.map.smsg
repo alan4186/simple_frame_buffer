@@ -1,0 +1,2 @@
+Info (10281): Verilog HDL Declaration information at AUTO_SYNC_MODIFY.v(4): object "VS" differs only in case from object "vs" in the same scope
+Info (10281): Verilog HDL Declaration information at AUTO_SYNC_MODIFY.v(5): object "HS" differs only in case from object "hs" in the same scope

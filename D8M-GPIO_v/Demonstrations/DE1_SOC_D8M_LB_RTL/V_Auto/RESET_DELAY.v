@@ -1,0 +1,21 @@
+module RESET_DELAY  (
+  input       RESET_N,
+  input       CLK , 
+  output reg  READY 
+);
+
+reg [31:0] DELAY   ;  
+reg        READY_n ; 
+
+always @( negedge RESET_N  or posedge CLK ) 
+if ( !RESET_N ) begin 
+   DELAY <= 0 ;  
+	READY <= 0 ;  
+end 
+else if ( DELAY < 32'hfff00 ) 
+ 
+   DELAY <= DELAY+1 ;
+else 
+   READY <=1 ; 
+
+endmodule 

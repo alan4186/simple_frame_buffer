@@ -1,0 +1,17 @@
+Analysis & Synthesis Status : Successful - Fri May 27 09:16:47 2016
+Quartus II 64-Bit Version : 15.0.0 Build 145 04/22/2015 Patches 0.32 SJ Full Version
+Revision Name : C5G_D8M
+Top-level Entity Name : C5G_D8M
+Family : Cyclone V
+Logic utilization (in ALMs) : N/A
+Total registers : 11197
+Total pins : 220
+Total virtual pins : 0
+Total block memory bits : 2,278,936
+Total DSP Blocks : 4
+Total HSSI RX PCSs : 0
+Total HSSI PMA RX Deserializers : 0
+Total HSSI TX PCSs : 0
+Total HSSI PMA TX Serializers : 0
+Total PLLs : 3
+Total DLLs : 1
